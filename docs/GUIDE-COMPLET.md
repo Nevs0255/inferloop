@@ -2,7 +2,7 @@
 
 > Document pédagogique pour **expliquer tout ce qu'on a fait** : le raisonnement,
 > les décisions, le fonctionnement technique, comment lancer et tester, et un
-> glossaire des termes. Complète `SOLUTION.md` (résumé) et la note d'Adrien.
+> glossaire des termes. Complète `README.md` (résumé) et la note d'Adrien.
 
 ---
 
@@ -165,8 +165,9 @@ inferloop-j1/
 ├── Dockerfile           # image CPU, modèle pré-téléchargé au build
 ├── docker-compose.yml   # lancement en une commande
 ├── requirements.txt     # dépendances figées
-├── SOLUTION.md          # résumé de la livraison
+├── README.md            # résumé de la livraison (page d'accueil)
 └── docs/
+    ├── brief-workshop.md          # brief d'origine
     ├── note_adrien_modele.md
     └── GUIDE-COMPLET.md            # ce document
 ```
