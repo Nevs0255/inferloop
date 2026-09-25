@@ -1,0 +1,17 @@
+# Environnement local (ne pas embarquer dans l'image)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Notebook, docs, données de test, modèle placeholder — inutiles au runtime API
+model_training.ipynb
+docs/
+articles_test/
+medialens_classifier/
+*.zip
+
+# Divers
+.git/
+.gitignore
+.DS_Store

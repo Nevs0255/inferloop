@@ -1,0 +1,25 @@
+# MédiaLens — InferLoop J1
+# Dépendances complétées et figées pour reproductibilité.
+
+# --- ML / inférence ---
+torch==2.14.0
+transformers==4.36.2
+tokenizers==0.15.2
+safetensors==0.8.0
+sentencepiece==0.2.2      # requis par CamemBERT (oublié par Adrien)
+sacremoses==0.2.0         # requis par la tokenization française (oublié par Adrien)
+numpy==2.5.3
+
+# --- Données / évaluation ---
+pandas==3.0.6
+scikit-learn==1.9.1
+datasets==5.0.1
+
+# --- API ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+
+# --- Tests ---
+pytest==8.3.4
+httpx==0.28.1

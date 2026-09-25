@@ -1,0 +1,22 @@
+# Environnement virtuel Python (1,3 Go — ne pas versionner)
+.venv/
+venv/
+env/
+
+# Caches Python / outils
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Cache modèles HuggingFace (téléchargés au runtime)
+.cache/
+hf-cache/
+
+# Fichiers temporaires PowerPoint / OS
+~$*
+.DS_Store
+
+# Logs et divers
+*.log

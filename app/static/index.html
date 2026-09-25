@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MédiaLens — Testeur d'API</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700;800;900&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --ground:#f5f4f1; --surface:#ffffff; --surface-2:#efeeea;
+  --ink:#1a1a18; --sub:#6b6b64; --faint:#9a988f;
+  --border:#dcdbd5; --border-strong:#c7c6bf;
+  --accent:#e0362b; --accent-soft:#fbe9e7;
+  --ok:#1f7a4d; --ok-soft:#e6f2ea; --warn:#b8860b;
+  --font-display:'Barlow','Arial Narrow',sans-serif;
+  --font-body:'Public Sans',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  color-scheme:dark;
+  --ground:#161619; --surface:#1e1e22; --surface-2:#26262b;
+  --ink:#eceae6; --sub:#a4a29a; --faint:#726f68;
+  --border:#33333a; --border-strong:#45454d;
+  --accent:#ff6155; --accent-soft:#3a1f1d;
+  --ok:#4cc38a; --ok-soft:#16281f; --warn:#e0b341;
+}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--ground);color:var(--ink);font-family:var(--font-body);
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.shell{max-width:820px;margin:0 auto;padding-inline:20px;padding-block:0}
+
+.top{border-bottom:1px solid var(--border);position:sticky;top:env(safe-area-inset-top,0px);
+  background:color-mix(in srgb,var(--ground) 88%,transparent);backdrop-filter:blur(10px);z-index:10}
+.top .row{max-width:820px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:14px}
+.brand{font-family:var(--font-display);font-weight:900;font-size:19px;letter-spacing:-.01em}
+.brand .dot{color:var(--accent)}
+.tagline{font-family:var(--font-mono);font-size:11px;color:var(--sub);letter-spacing:.06em;text-transform:uppercase}
+.grow{flex:1}
+.health{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12px;color:var(--sub)}
+.health .led{width:9px;height:9px;border-radius:50%;background:var(--faint);transition:background .3s}
+.health.ok .led{background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
+.health.down .led{background:var(--accent)}
+
+.hero{padding-block:34px 8px}
+.eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--accent);display:flex;align-items:center;gap:10px}
+.eyebrow::before{content:"";width:26px;height:3px;background:var(--accent)}
+h1{font-family:var(--font-display);font-weight:900;letter-spacing:-.02em;
+  font-size:clamp(30px,6vw,46px);line-height:1;margin:14px 0 0}
+.hero p{color:var(--sub);margin:12px 0 0;max-width:56ch}
+
+.card{background:var(--surface);border:1px solid var(--border);margin-top:24px}
+.card .body{padding:22px}
+label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--sub);margin:0 0 7px}
+input,textarea{width:100%;font-family:var(--font-body);font-size:16px;color:var(--ink);
+  background:var(--ground);border:1px solid var(--border-strong);border-radius:0;
+  padding:12px 14px;outline:none;resize:vertical}
+input:focus,textarea:focus{border-color:var(--accent)}
+textarea{min-height:120px;line-height:1.55}
+.field + .field{margin-top:16px}
+.actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:18px}
+button.primary{font-family:var(--font-display);font-weight:700;font-size:16px;letter-spacing:.01em;
+  background:var(--accent);color:#fff;border:none;border-radius:0;padding:13px 26px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:10px}
+button.primary:hover{filter:brightness(.94)}
+button.primary:disabled{opacity:.55;cursor:progress}
+button.primary:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.hint{font-family:var(--font-mono);font-size:12px;color:var(--faint)}
+.spin{width:15px;height:15px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;
+  border-radius:50%;animation:sp .7s linear infinite;display:none}
+button.primary.loading .spin{display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.examples{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.examples .lbl{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--faint);width:100%;margin-bottom:2px}
+.chip{font-family:var(--font-body);font-size:13.5px;color:var(--ink);background:var(--surface-2);
+  border:1px solid var(--border);padding:7px 13px;cursor:pointer}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+
+.result{margin-top:22px;border:1px solid var(--border);background:var(--surface);display:none}
+.result.show{display:block}
+.result .rhead{display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+  padding:16px 22px;border-bottom:1px solid var(--border)}
+.result .rhead .k{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--accent)}
+.result .rhead .lat{font-family:var(--font-mono);font-size:13px;color:var(--sub)}
+.result .rbody{padding:24px 22px}
+.cat{font-family:var(--font-display);font-weight:900;letter-spacing:-.02em;
+  font-size:clamp(34px,8vw,58px);line-height:1;text-transform:capitalize}
+.score-wrap{margin-top:20px}
+.score-top{display:flex;justify-content:space-between;align-items:baseline;
+  font-family:var(--font-mono);font-size:12px;color:var(--sub);letter-spacing:.06em;text-transform:uppercase}
+.score-top b{font-family:var(--font-display);font-size:22px;color:var(--ink);font-weight:800}
+.track{height:12px;background:var(--surface-2);border:1px solid var(--border);margin-top:8px;overflow:hidden}
+.fill{height:100%;background:var(--accent);width:0;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.cats{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.cats .c{font-family:var(--font-mono);font-size:12px;letter-spacing:.04em;padding:6px 12px;
+  border:1px solid var(--border);color:var(--faint);background:var(--ground)}
+.cats .c.win{color:#fff;background:var(--accent);border-color:var(--accent);font-weight:600}
+
+details.raw{margin-top:16px}
+details.raw summary{font-family:var(--font-mono);font-size:12px;color:var(--sub);cursor:pointer;
+  letter-spacing:.04em;list-style:none}
+details.raw summary::-webkit-details-marker{display:none}
+details.raw summary::before{content:"▸ ";color:var(--accent)}
+details.raw[open] summary::before{content:"▾ "}
+pre.json{margin:10px 0 0;background:#16150f;color:#e9e7df;font-family:var(--font-mono);font-size:12.5px;
+  padding:14px 16px;overflow-x:auto;border:1px solid var(--border-strong)}
+.pk{color:#8fd3ff}.pv{color:#ff9d94}.pn{color:#a7e0a0}
+.err{margin-top:22px;border:1px solid var(--accent);background:var(--accent-soft);padding:16px 20px;display:none}
+.err.show{display:block}
+.err .t{font-family:var(--font-display);font-weight:700;color:var(--accent)}
+.err .d{font-size:14px;color:var(--ink);margin-top:4px}
+
+footer{padding-block:30px 46px;text-align:center;font-family:var(--font-mono);
+  font-size:12px;color:var(--faint);letter-spacing:.04em}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="row">
+    <span class="brand">MédiaLens<span class="dot">.</span></span>
+    <span class="tagline">Testeur d'API</span>
+    <span class="grow"></span>
+    <span class="health" id="health"><span class="led"></span><span id="healthTxt">vérification…</span></span>
+  </div>
+</header>
+
+<div class="shell">
+  <div class="hero">
+    <div class="eyebrow">POST /infer · Zero-shot</div>
+    <h1>Classez un article.</h1>
+    <p>Saisissez un titre et un texte : le modèle mDeBERTa renvoie la catégorie, un
+      score de confiance et le temps d'inférence.</p>
+  </div>
+
+  <div class="card">
+    <div class="body">
+      <div class="field">
+        <label for="titre">Titre</label>
+        <input id="titre" type="text" placeholder="Ex. Budget 2025 adopté à l'Assemblée" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="texte">Texte de l'article</label>
+        <textarea id="texte" placeholder="Collez ici le corps de l'article…"></textarea>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="go" type="button"><span class="spin"></span><span id="goTxt">Classer l'article</span></button>
+        <span class="hint" id="hint">⌘/Ctrl + Entrée pour lancer</span>
+      </div>
+
+      <div class="examples" id="examples">
+        <span class="lbl">Exemples</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="err" id="err"><div class="t" id="errT">Erreur</div><div class="d" id="errD"></div></div>
+
+  <div class="result" id="result">
+    <div class="rhead">
+      <span class="k">Résultat</span>
+      <span class="lat" id="lat">— ms</span>
+    </div>
+    <div class="rbody">
+      <div class="cat" id="cat">—</div>
+      <div class="score-wrap">
+        <div class="score-top"><span>Confiance</span><b id="scoreVal">0 %</b></div>
+        <div class="track"><div class="fill" id="fill"></div></div>
+      </div>
+      <div class="cats" id="cats"></div>
+      <details class="raw">
+        <summary>Réponse brute (JSON)</summary>
+        <pre class="json" id="raw"></pre>
+      </details>
+    </div>
+  </div>
+</div>
+
+<footer>MédiaLens · InferLoop J1 — mDeBERTa-v3 · FastAPI</footer>
+
+<script>
+const LABELS = ["politique","economie","sport","culture","faits_divers"];
+const $ = (id) => document.getElementById(id);
+
+const EXAMPLES = [
+  {t:"Politique", titre:"Budget 2025 adopté à l'Assemblée",
+   texte:"Après trois semaines de débats et l'utilisation du 49-3, les députés ont voté le projet de loi de finances visant un déficit à 3,2 pourcent du PIB."},
+  {t:"Sport", titre:"Les Bleus en finale",
+   texte:"L'équipe de France de football s'est qualifiée pour la finale après une victoire 2-1 en demi-finale."},
+  {t:"Économie", titre:"La Bourse de Paris en hausse",
+   texte:"Le CAC 40 clôture en hausse de 1,2 pourcent, porté par les valeurs bancaires et le secteur du luxe."},
+  {t:"Culture", titre:"Ouverture du festival de Cannes",
+   texte:"Le festival de Cannes a ouvert ses portes avec un film franco-américain présenté en compétition officielle."},
+  {t:"Faits divers", titre:"Incendie dans un entrepôt à Lyon",
+   texte:"Un incendie s'est déclaré dans un entrepôt industriel de la banlieue lyonnaise, sans faire de victimes."},
+];
+
+const exWrap = $("examples");
+EXAMPLES.forEach(ex => {
+  const b = document.createElement("button");
+  b.className = "chip"; b.type = "button"; b.textContent = ex.t;
+  b.addEventListener("click", () => { $("titre").value = ex.titre; $("texte").value = ex.texte; classify(); });
+  exWrap.appendChild(b);
+});
+
+async function pingHealth(){
+  const el = $("health"), txt = $("healthTxt");
+  try{
+    const r = await fetch("/health");
+    const j = await r.json();
+    if(j.model_loaded){ el.className = "health ok"; txt.textContent = "modèle chargé"; }
+    else { el.className = "health"; txt.textContent = "chargement…"; }
+  }catch(e){ el.className = "health down"; txt.textContent = "API injoignable"; }
+}
+pingHealth(); setInterval(pingHealth, 5000);
+
+function renderJSON(obj){
+  const s = JSON.stringify(obj, null, 2)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/"([^"]+)":/g, '<span class="pk">"$1"</span>:')
+    .replace(/: "([^"]*)"/g, ': <span class="pv">"$1"</span>')
+    .replace(/: (\d+\.?\d*)/g, ': <span class="pn">$1</span>');
+  $("raw").innerHTML = s;
+}
+
+function showError(title, detail){
+  $("result").classList.remove("show");
+  $("errT").textContent = title; $("errD").textContent = detail;
+  $("err").classList.add("show");
+}
+
+async function classify(){
+  const titre = $("titre").value.trim();
+  const texte = $("texte").value.trim();
+  $("err").classList.remove("show");
+  if(!texte){ showError("Texte manquant", "Le champ « Texte de l'article » est obligatoire."); return; }
+
+  const btn = $("go");
+  btn.disabled = true; btn.classList.add("loading"); $("goTxt").textContent = "Classification…";
+  try{
+    const r = await fetch("/infer", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({titre, texte})
+    });
+    if(r.status === 422){ showError("Requête invalide (422)", "Le serveur a rejeté la validation — vérifiez le texte."); return; }
+    if(!r.ok){ showError("Erreur " + r.status, "Réponse inattendue du serveur."); return; }
+    const data = await r.json();
+    showResult(data);
+  }catch(e){
+    showError("API injoignable", "Le serveur ne répond pas. L'API tourne-t-elle sur ce port ?");
+  }finally{
+    btn.disabled = false; btn.classList.remove("loading"); $("goTxt").textContent = "Classer l'article";
+  }
+}
+
+function showResult(data){
+  $("cat").textContent = (data.categorie || "—").replace("_"," ");
+  const pct = Math.round((data.score || 0) * 100);
+  $("scoreVal").textContent = pct + " %";
+  $("lat").textContent = (data.latence_ms ?? "—") + " ms";
+  requestAnimationFrame(() => { $("fill").style.width = pct + "%"; });
+
+  const cats = $("cats"); cats.innerHTML = "";
+  LABELS.forEach(l => {
+    const c = document.createElement("span");
+    c.className = "c" + (l === data.categorie ? " win" : "");
+    c.textContent = l.replace("_"," ");
+    cats.appendChild(c);
+  });
+  renderJSON(data);
+  $("result").classList.add("show");
+  $("result").scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+$("go").addEventListener("click", classify);
+document.addEventListener("keydown", (e) => {
+  if((e.metaKey || e.ctrlKey) && e.key === "Enter") classify();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MédiaLens — Classifieur d'articles (InferLoop J1)</title>
+
+<!-- Swiss Grid preset : Barlow / Barlow Condensed -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,700;0,900;1,400&family=Barlow+Condensed:wght@400;600&display=swap" rel="stylesheet">
+
+<!-- Animations + charts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root{
+  --bg:#f5f5f2; --surface:#ffffff; --border:#d0d0cc;
+  --text-primary:#111110; --text-secondary:#777770;
+  --accent:#e63329; --accent-2:#1a1a18; --danger:#e63329;
+  --font-display:'Barlow',sans-serif; --font-body:'Barlow Condensed',sans-serif;
+  --radius:0px; --shadow:none; --transition:0.25s cubic-bezier(0.4,0,0.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;overflow:hidden;font-family:var(--font-body)}
+
+/* ---- viewport scaling : canvas 1280x720 ---- */
+.slides-wrapper{position:fixed;width:1280px;height:720px;overflow:hidden;background:var(--bg)}
+.slide{position:absolute;inset:0;width:100%;height:100%;padding:64px 84px;
+  display:none;flex-direction:column;background:var(--bg);color:var(--text-primary)}
+.slide.active{display:flex}
+
+/* ---- grid decorations ---- */
+.slide::before{content:"";position:absolute;top:0;left:84px;right:84px;height:1px;background:var(--border);opacity:.6}
+.eyebrow{font-family:var(--font-body);font-weight:600;font-size:15px;letter-spacing:.28em;
+  text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:14px}
+.eyebrow::before{content:"";width:34px;height:3px;background:var(--accent);display:inline-block}
+h1{font-family:var(--font-display);font-weight:900;line-height:.98;letter-spacing:-.02em}
+h2{font-family:var(--font-display);font-weight:900;font-size:52px;line-height:1.02;letter-spacing:-.015em;margin-top:6px}
+.lead{font-size:23px;line-height:1.4;color:var(--text-secondary);font-weight:400;max-width:70ch}
+.slide-head{margin-bottom:30px}
+.slide-num{position:absolute;top:60px;right:84px;font-family:var(--font-display);font-weight:900;
+  font-size:15px;color:var(--text-secondary);letter-spacing:.1em}
+.footer{position:absolute;bottom:34px;left:84px;font-family:var(--font-body);font-weight:600;
+  font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-secondary)}
+
+/* ---- cards / grids ---- */
+.cards{display:grid;gap:20px;margin-top:8px}
+.cards.c2{grid-template-columns:1fr 1fr}
+.cards.c3{grid-template-columns:repeat(3,1fr)}
+.cards.c4{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--surface);border:1px solid var(--border);padding:26px 26px 28px;position:relative}
+.card .k{font-family:var(--font-display);font-weight:900;font-size:15px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.card .big{font-family:var(--font-display);font-weight:900;font-size:44px;line-height:1;color:var(--text-primary)}
+.card p{font-size:18px;line-height:1.4;color:var(--text-secondary);margin-top:8px}
+
+/* ---- stat row ---- */
+.stats{display:flex;gap:54px;margin-top:6px}
+.stat .v{font-family:var(--font-display);font-weight:900;font-size:66px;line-height:1;color:var(--accent)}
+.stat .l{font-family:var(--font-body);font-weight:600;font-size:15px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--text-secondary);margin-top:10px}
+
+/* ---- two-col layout ---- */
+.split{display:grid;grid-template-columns:1.05fr 1fr;gap:48px;flex:1;align-items:center}
+.chart-box{background:var(--surface);border:1px solid var(--border);padding:22px 24px;height:400px;position:relative}
+.chart-box .cap{font-family:var(--font-body);font-weight:600;font-size:14px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px}
+.chart-box canvas{max-height:330px}
+
+/* ---- list ---- */
+.rows{display:flex;flex-direction:column;gap:0;border-top:1px solid var(--border);margin-top:12px}
+.row{display:flex;gap:22px;align-items:baseline;padding:18px 4px;border-bottom:1px solid var(--border)}
+.row .n{font-family:var(--font-display);font-weight:900;font-size:22px;color:var(--accent);min-width:40px}
+.row .t{font-family:var(--font-display);font-weight:700;font-size:22px;color:var(--text-primary);min-width:230px}
+.row .d{font-size:19px;color:var(--text-secondary);line-height:1.35}
+
+/* ---- code / json chip ---- */
+.chip{background:var(--accent-2);color:#f5f5f2;font-family:'Barlow',monospace;font-weight:400;
+  font-size:19px;padding:16px 20px;line-height:1.5;letter-spacing:.01em}
+.chip .a{color:#ff8a82}.chip .b{color:#8fd3ff}
+
+/* ---- title slide ---- */
+.hero{justify-content:center}
+.hero h1{font-size:132px}
+.hero .tag{display:flex;gap:12px;margin-top:34px}
+.hero .tag span{border:1px solid var(--accent-2);padding:9px 16px;font-family:var(--font-body);
+  font-weight:600;font-size:15px;letter-spacing:.16em;text-transform:uppercase}
+
+/* ---- closing ---- */
+.closing{justify-content:center;background:var(--accent-2);color:#f5f5f2}
+.closing::before{background:#3a3a36}
+.closing h2{font-size:72px;max-width:20ch}
+.closing .lead{color:#b8b8b0}
+.closing .footer{color:#8a8a82}
+.closing .eyebrow{color:#ff8a82}
+.closing .eyebrow::before{background:#ff8a82}
+
+/* ---- dots ---- */
+.slide-dots{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:9px;z-index:100}
+.dot{width:8px;height:8px;border-radius:50%;background:#888;opacity:.4;cursor:pointer;border:none;padding:0;transition:all .3s}
+.dot.active{background:var(--accent);opacity:1;transform:scale(1.35)}
+
+@media (prefers-reduced-motion: reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<div class="slides-wrapper">
+
+  <!-- SLIDE 1 : Titre -->
+  <section class="slide hero active">
+    <div class="eyebrow">InferLoop · Jour 1</div>
+    <h1>MédiaLens</h1>
+    <p class="lead" style="margin-top:22px;font-size:27px;color:var(--text-primary)">
+      Classifieur d'articles de presse française — API zero-shot.</p>
+    <div class="tag">
+      <span>FastAPI</span><span>mDeBERTa-v3</span><span>Zero-shot NLI</span><span>Docker</span>
+    </div>
+    <div class="footer">MédiaLens · Workshop InferLoop</div>
+  </section>
+
+  <!-- SLIDE 2 : Contexte -->
+  <section class="slide">
+    <div class="slide-num">02 / 09</div>
+    <div class="slide-head">
+      <div class="eyebrow">Le point de départ</div>
+      <h2>Un modèle sans ses poids</h2>
+    </div>
+    <p class="lead">Adrien a laissé un CamemBERT fine-tuné (macro-F1&nbsp;0.87)… mais le fichier de
+      poids <b style="color:var(--text-primary)">pytorch_model.bin&nbsp;(~443&nbsp;Mo)</b> n'est pas fourni.
+      Impossible de le charger tel quel.</p>
+    <div class="cards c3" style="margin-top:34px">
+      <div class="card"><div class="k">Latence</div><div class="big">&lt; 500 ms</div><p>p99 exigé par Chloé (SLA business)</p></div>
+      <div class="card"><div class="k">Santé</div><div class="big">/health</div><p>l'API doit dire si le modèle est chargé</p></div>
+      <div class="card"><div class="k">Déploiement</div><div class="big">Docker</div><p>tout lancer en une seule commande</p></div>
+    </div>
+    <div class="footer">MédiaLens · InferLoop J1</div>
+  </section>
+
+  <!-- SLIDE 3 : Stratégie -->
+  <section class="slide">
+    <div class="slide-num">03 / 09</div>
+    <div class="slide-head">
+      <div class="eyebrow">La stratégie</div>
+      <h2>Zero-shot, sans réentraîner</h2>
+    </div>
+    <p class="lead">Sans les poids, on ne réentraîne pas en 24&nbsp;h. On classe en
+      <b style="color:var(--text-primary)">zero-shot NLI</b> : le modèle décide si un article
+      « parle de&nbsp;» chaque catégorie, sans avoir jamais vu le corpus MédiaLens.</p>
+    <div class="cards c2" style="margin-top:36px">
+      <div class="card" style="border-left:4px solid var(--accent)">
+        <div class="k">Le modèle retenu</div>
+        <div class="big" style="font-size:34px">mDeBERTa-v3-base-mnli-xnli</div>
+        <p>Un modèle NLI multilingue, prêt à l'emploi sur nos 5 catégories.</p>
+      </div>
+      <div class="card">
+        <div class="k">Les 5 catégories</div>
+        <p style="font-size:22px;color:var(--text-primary);line-height:1.7;margin-top:4px">
+          politique · economie · sport<br>culture · faits_divers</p>
+      </div>
+    </div>
+    <div class="footer">MédiaLens · InferLoop J1</div>
+  </section>
+
+  <!-- SLIDE 4 : Pourquoi mDeBERTa -->
+  <section class="slide">
+    <div class="slide-num">04 / 09</div>
+    <div class="slide-head">
+      <div class="eyebrow">Le modèle</div>
+      <h2>Pourquoi mDeBERTa-v3</h2>
+    </div>
+    <div class="cards c4" style="margin-top:14px">
+      <div class="card"><div class="k">Français natif</div><p style="font-size:19px">Entraîné sur XNLI — le français fait partie du socle, pas une traduction.</p></div>
+      <div class="card"><div class="k">Léger</div><div class="big">~280M</div><p>paramètres → image Docker contenue</p></div>
+      <div class="card"><div class="k">Prêt à l'emploi</div><p style="font-size:19px">Zero-shot : aucun fine-tuning, aucun corpus d'entraînement requis.</p></div>
+      <div class="card" style="border-left:4px solid var(--accent)"><div class="k">Réglage clé</div><div class="big">+8 pts</div><p>de F1 grâce au gabarit d'hypothèse en français</p></div>
+    </div>
+    <p class="lead" style="margin-top:30px;font-size:21px">
+      Gabarit&nbsp;: <span style="color:var(--text-primary);font-weight:600">« Cet article parle de {} »</span>
+      au lieu du défaut anglais — validé sur 3 configurations.</p>
+    <div class="footer">MédiaLens · InferLoop J1</div>
+  </section>
+
+  <!-- SLIDE 5 : Preuve latence -->
+  <section class="slide">
+    <div class="slide-num">05 / 09</div>
+    <div class="slide-head">
+      <div class="eyebrow">Preuve #1 · Latence</div>
+      <h2>p99 à 343 ms, sous le SLA</h2>
+    </div>
+    <div class="split">
+      <div class="chart-box">
+        <div class="cap">Latence CPU — 100 inférences à chaud (ms) · scripts/benchmark.py</div>
+        <canvas id="latChart"></canvas>
+      </div>
+      <div>
+        <div class="stats" style="flex-direction:column;gap:26px">
+          <div class="stat"><div class="v">343<span style="font-size:30px"> ms</span></div><div class="l">p99 mesuré</div></div>
+          <div class="stat"><div class="v" style="color:var(--text-primary)">500<span style="font-size:30px"> ms</span></div><div class="l">SLA exigé</div></div>
+        </div>
+        <p class="lead" style="margin-top:28px;font-size:20px">Le modèle est chargé une seule fois au
+          démarrage (lifespan) : la première requête n'est jamais pénalisée.</p>
+      </div>
+    </div>
+    <div class="footer">MédiaLens · InferLoop J1</div>
+  </section>
+
+  <!-- SLIDE 6 : Preuve qualité -->
+  <section class="slide">
+    <div class="slide-num">06 / 09</div>
+    <div class="slide-head">
+      <div class="eyebrow">Preuve #2 · Qualité</div>
+      <h2>0.71 de macro-F1 en zero-shot</h2>
+    </div>
+    <div class="split">
+      <div class="chart-box">
+        <div class="cap">F1 par classe — validation sur 475 articles</div>
+        <canvas id="f1Chart"></canvas>
+      </div>
+      <div>
+        <div class="stats" style="gap:40px">
+          <div class="stat"><div class="v">0.731</div><div class="l">Accuracy</div></div>
+          <div class="stat"><div class="v">0.713</div><div class="l">Macro-F1</div></div>
+        </div>
+        <div class="card" style="margin-top:30px">
+          <div class="k">Point faible assumé</div>
+          <p style="font-size:20px"><b style="color:var(--text-primary)">economie</b> (F1&nbsp;0.41,
+            recall&nbsp;0.31) — confondu avec politique et faits_divers, comme le notait déjà Adrien.</p>
+        </div>
+      </div>
+    </div>
+    <div class="footer">MédiaLens · InferLoop J1</div>
+  </section>
+
+  <!-- SLIDE 7 : Architecture -->
+  <section class="slide">
+    <div class="slide-num">07 / 09</div>
+    <div class="slide-head">
+      <div class="eyebrow">Architecture</div>
+      <h2>Prête pour la production</h2>
+    </div>
+    <div class="split" style="grid-template-columns:1fr 1fr;align-items:start;margin-top:8px">
+      <div>
+        <div class="rows" style="margin-top:0">
+          <div class="row"><div class="n">API</div><div class="t">FastAPI</div><div class="d">POST /infer · GET /health · GET /</div></div>
+          <div class="row"><div class="n">ML</div><div class="t">Inference</div><div class="d">mDeBERTa chargé au lifespan, mis en cache</div></div>
+          <div class="row"><div class="n">Ops</div><div class="t">Docker</div><div class="d">image CPU, modèle pré-téléchargé au build</div></div>
+          <div class="row"><div class="n">QA</div><div class="t">pytest</div><div class="d">8 tests — endpoints, validation, logique</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="chip" style="margin-top:2px">
+          <b>POST /infer</b><br>
+          → { <span class="b">"titre"</span>: "…", <span class="b">"texte"</span>: "…" }<br><br>
+          ← { <span class="a">"categorie"</span>: "sport",<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="a">"score"</span>: 0.908,<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="a">"latence_ms"</span>: 250 }
+        </div>
+        <div class="chip" style="margin-top:16px;background:#111110">
+          $ docker compose up --build
+        </div>
+      </div>
+    </div>
+    <div class="footer">MédiaLens · InferLoop J1</div>
+  </section>
+
+  <!-- SLIDE 8 : Limites -->
+  <section class="slide">
+    <div class="slide-num">08 / 09</div>
+    <div class="slide-head">
+      <div class="eyebrow">Lucidité</div>
+      <h2>Ce qu'on assume, ce qui suit</h2>
+    </div>
+    <div class="rows">
+      <div class="row"><div class="n">01</div><div class="t">Écart au fine-tuné</div><div class="d">~15 pts de F1 sous le modèle d'Adrien — prix du zero-shot, sans entraînement corpus.</div></div>
+      <div class="row"><div class="n">02</div><div class="t">economie sous-détectée</div><div class="d">recall 0.31 — piste J2 : labels ciblés ou quelques exemples (few-shot).</div></div>
+      <div class="row"><div class="n">03</div><div class="t">Articles courts</div><div class="d">&lt; 50 mots moins fiables — déjà signalé dans la note d'Adrien.</div></div>
+      <div class="row"><div class="n">04</div><div class="t">Pas de monitoring drift</div><div class="d">aucune détection de dérive sur les articles récents — chantier Jour 2.</div></div>
+    </div>
+    <div class="footer">MédiaLens · InferLoop J1</div>
+  </section>
+
+  <!-- SLIDE 9 : Clôture -->
+  <section class="slide closing">
+    <div class="eyebrow">InferLoop · Jour 1</div>
+    <h2>Zero-shot, mais mesuré, validé<br>et prêt pour la production.</h2>
+    <p class="lead" style="margin-top:24px">SLA tenu · pipeline validée sur 475 articles · livrable Docker en une commande.</p>
+    <div class="footer">MédiaLens · Classifieur d'articles</div>
+  </section>
+
+</div>
+
+<nav class="slide-dots" aria-label="Navigation"></nav>
+
+<script>
+// === VIEWPORT SCALING (canvas 1280x720) ===
+const SLIDE_W=1280,SLIDE_H=720,wrap=document.querySelector('.slides-wrapper');
+function scaleToViewport(){
+  const s=Math.min(window.innerWidth/SLIDE_W,window.innerHeight/SLIDE_H);
+  wrap.style.transform=`scale(${s})`;wrap.style.transformOrigin='0 0';
+  wrap.style.left=(window.innerWidth-SLIDE_W*s)/2+'px';
+  wrap.style.top=(window.innerHeight-SLIDE_H*s)/2+'px';
+}
+window.addEventListener('resize',scaleToViewport);
+document.addEventListener('fullscreenchange',scaleToViewport);
+scaleToViewport();
+
+// === NAVIGATION ===
+const slides=[...document.querySelectorAll('.slide')];
+let cur=0,charted={};
+const nav=document.querySelector('.slide-dots');
+slides.forEach((_,i)=>{const d=document.createElement('button');d.className='dot'+(i===0?' active':'');
+  d.setAttribute('aria-label','Slide '+(i+1));d.addEventListener('click',e=>{e.stopPropagation();goTo(i)});nav.appendChild(d);});
+function updateDots(i){document.querySelectorAll('.dot').forEach((d,j)=>d.classList.toggle('active',j===i));}
+
+function reveal(slide){
+  const els=slide.querySelectorAll('.eyebrow,h1,h2,.lead,.card,.stat,.row,.chip,.tag,.chart-box');
+  gsap.fromTo(els,{opacity:0,y:26},{opacity:1,y:0,duration:.55,stagger:.06,ease:'power2.out'});
+}
+function goTo(i){
+  if(i<0||i>=slides.length||i===cur)return;
+  slides[cur].classList.remove('active');
+  cur=i;
+  slides[cur].classList.add('active');
+  updateDots(cur);
+  reveal(slides[cur]);
+  if(cur===4&&!charted.lat)drawLat();
+  if(cur===5&&!charted.f1)drawF1();
+}
+const next=()=>goTo(cur+1),prev=()=>goTo(cur-1);
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();next();}
+  if(e.key==='ArrowLeft')prev();
+});
+document.addEventListener('click',e=>{
+  if(e.target.closest('button,a,input,[data-no-nav]'))return;
+  (e.clientX>window.innerWidth/2)?next():prev();
+});
+let tsx=0;
+document.addEventListener('touchstart',e=>tsx=e.touches[0].clientX,{passive:true});
+document.addEventListener('touchend',e=>{const d=tsx-e.changedTouches[0].clientX;
+  if(Math.abs(d)>50)d>0?next():prev();},{passive:true});
+// Molette : un seul saut par geste, puis on attend que le scroll se calme
+// (évite les rafales de momentum du trackpad qui faisaient sauter les slides).
+let wheelReady=true,wheelIdle=null;
+document.addEventListener('wheel',e=>{
+  clearTimeout(wheelIdle);
+  wheelIdle=setTimeout(()=>{wheelReady=true;},220);
+  if(wheelReady&&Math.abs(e.deltaY)>20){wheelReady=false;e.deltaY>0?next():prev();}
+},{passive:true});
+
+// === CHARTS ===
+const AXIS='#777770',GRID='#d0d0cc',INK='#111110',RED='#e63329';
+function drawLat(){
+  charted.lat=true;
+  new Chart(document.getElementById('latChart'),{
+    type:'bar',
+    data:{labels:['p50','p95','p99','SLA'],
+      datasets:[{data:[240,290,343,500],
+        backgroundColor:[INK,INK,RED,'rgba(230,51,41,0.12)'],
+        borderColor:[INK,INK,RED,RED],borderWidth:[0,0,0,2]}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:900},
+      plugins:{legend:{display:false},tooltip:{enabled:false}},
+      scales:{y:{beginAtZero:true,max:560,grid:{color:GRID},ticks:{color:AXIS,font:{family:'Barlow Condensed',size:14}}},
+        x:{grid:{display:false},ticks:{color:INK,font:{family:'Barlow',weight:'700',size:16}}}}}
+  });
+}
+function drawF1(){
+  charted.f1=true;
+  new Chart(document.getElementById('f1Chart'),{
+    type:'bar',
+    data:{labels:['sport','culture','politique','faits_divers','economie'],
+      datasets:[{data:[0.88,0.83,0.80,0.64,0.41],
+        backgroundColor:['#111110','#111110','#111110','#777770',RED]}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:{duration:900},
+      plugins:{legend:{display:false},tooltip:{enabled:false}},
+      scales:{x:{beginAtZero:true,max:1,grid:{color:GRID},ticks:{color:AXIS,font:{family:'Barlow Condensed',size:14}}},
+        y:{grid:{display:false},ticks:{color:INK,font:{family:'Barlow',weight:'700',size:15}}}}}
+  });
+}
+
+// premier reveal
+reveal(slides[0]);
+</script>
+</body>
+</html>
