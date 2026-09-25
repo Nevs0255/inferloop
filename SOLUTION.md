@@ -78,9 +78,17 @@ inferloop-j1/
 │   └── benchmark.py   # mesure la latence p50/p95/p99 (preuve du SLA)
 ├── tests/
 │   └── test_api.py    # 8 tests pytest (endpoints + validation + logique)
+├── presentation/
+│   ├── index.html     # deck web (Swiss Grid, 9 slides)
+│   ├── guide.html     # guide complet (page web)
+│   └── MediaLens-InferLoop-J1.pptx  # deck PowerPoint éditable
+├── docs/
+│   ├── note_adrien_modele.md  # note technique héritée d'Adrien
+│   └── GUIDE-COMPLET.md        # guide détaillé + glossaire
 ├── Dockerfile         # image CPU, modèle pré-téléchargé au build
 ├── docker-compose.yml # lancement en une commande
-└── requirements.txt   # dépendances figées (sentencepiece/sacremoses inclus)
+├── requirements.txt   # dépendances figées (sentencepiece/sacremoses inclus)
+└── SOLUTION.md        # ce document
 ```
 
 Le modèle est chargé **une seule fois** au démarrage (lifespan FastAPI), donc
